@@ -1,30 +1,63 @@
 -module(esendgrid).
 
 -export([send_email/1]).
--export([send_email/4]).
 
-send_email(Json) ->
+parse_email(String) ->
+    {ok, R0} = re:compile(<<"\([^<]+\) <\([^>]+\)>">>),
+    case re:run(String, R0, [{capture, all_but_first, binary}]) of
+        {match, [Name, Email]} ->
+            {Name, Email};
+        nomatch ->
+            String
+    end.
+
+send_email(Json) when is_binary(Json) ->
     Jterm = jiffy:decode(Json),
-    To = ej:get({"To"}, Jterm),
-    From = ej:get({"From"}, Jterm),
+
     Subject = ej:get({"Subject"}, Jterm),
     Text = ej:get({"TextBody"}, Jterm),
-    send_email(To, From, Subject, Text).
+    To = ej:get({"To"}, Jterm),
+    From = ej:get({"From"}, Jterm),
 
-send_email(To, From, Subject, Text)
-  when is_binary(To), is_binary(From), is_binary(Subject), is_binary(Text) ->
+    Params0 = [
+        {<<"subject">>, Subject},
+        {<<"text">>, Text}
+    ],
+
+    Params1 = case parse_email(To) of
+        {ToName, ToEmail} ->
+            Params0 ++ [
+                {<<"to">>, ToEmail},
+                {<<"toname">>, ToName}
+            ];
+        ToEmail ->
+            Params0 ++ [
+                {<<"to">>, ToEmail}
+            ]
+    end,
+
+    Params2 = case parse_email(From) of
+        {FromName, FromEmail} ->
+            Params1 ++ [
+                {<<"from">>, FromEmail},
+                {<<"fromname">>, FromName}
+            ];
+        FromEmail ->
+            Params1 ++ [
+                {<<"from">>, FromEmail}
+            ]
+    end,
+    send_email(Params2);
+
+send_email(Params) when is_list(Params) ->
     {ok, ApiUser} = application:get_env(esendgrid, sendgrid_api_user),
     {ok, ApiKey} = application:get_env(esendgrid, sendgrid_api_key),
 
-    Params = [
-        {<<"to">>, To},
-        {<<"from">>, From},
-        {<<"subject">>, Subject},
-        {<<"text">>, Text},
+    Auth = [
         {<<"api_user">>, ApiUser},
         {<<"api_key">>, ApiKey}
     ],
-    Body = form_urlencode(Params),
+    Body = form_urlencode(Params ++ Auth),
     Res = lhttpc:request(
         "https://sendgrid.com/api/mail.send.json",
         "POST",
