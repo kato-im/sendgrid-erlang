@@ -8,7 +8,7 @@ send_email(Json) ->
     To = ej:get({"To"}, Jterm),
     From = ej:get({"From"}, Jterm),
     Subject = ej:get({"Subject"}, Jterm),
-    Text = ej:get({"Text"}, Jterm),
+    Text = ej:get({"TextBody"}, Jterm),
     send_email(To, From, Subject, Text).
 
 send_email(To, From, Subject, Text)
