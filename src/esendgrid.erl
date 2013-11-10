@@ -1,6 +1,15 @@
 -module(esendgrid).
 
+-export([send_email/1]).
 -export([send_email/4]).
+
+send_email(Json) ->
+    Jterm = jiffy:decode(Json),
+    To = ej:get({"To"}, Jterm),
+    From = ej:get({"From"}, Jterm),
+    Subject = ej:get({"Subject"}, Jterm),
+    Text = ej:get({"Text"}, Jterm),
+    send_email(To, From, Subject, Text).
 
 send_email(To, From, Subject, Text)
   when is_binary(To), is_binary(From), is_binary(Subject), is_binary(Text) ->
