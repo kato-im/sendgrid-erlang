@@ -61,7 +61,8 @@ handle_response({ok, {{200, _}, _, JsonResponse}}) ->
 
 handle_response({ok, {{400, "Bad Request"}, _, JsonResponse}}) ->
     Jterm = jiffy:decode(JsonResponse),
-    case ej:get({<<"message">>, <<"error">>, <<"errors">>, 0}, Jterm) of
+    error_logger:info_msg("~p~n", [Jterm]),
+    case ej:get({"message", "error", "errors", 0}, Jterm) of
         <<"Invalid from email address", _/binary>> ->
             {error, illegal_from_address};
         <<"Invalid to email address", _/binary>> ->
