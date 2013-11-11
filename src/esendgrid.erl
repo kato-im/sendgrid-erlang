@@ -64,7 +64,7 @@ handle_response({ok, {{400, "Bad Request"}, _, JsonResponse}}) ->
     case ej:get({"errors", 1}, Jterm) of
         <<"Invalid from email address", _/binary>> ->
             {error, illegal_from_address};
-        <<"Invalid to email address", _/binary>> ->
+        <<"Invalid email address", _/binary>> ->
             {error, illegal_to_address};
         _ ->
             {error, Jterm}
