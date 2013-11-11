@@ -23,17 +23,27 @@ send_email(Json) when is_binary(Json) ->
     ],
     Params1 = case parse_email(To) of
         {ToName, ToEmail} ->
-            Params0 ++ [ {<<"to">>, ToEmail}, {<<"toname">>, ToName} ];
+            Params0 ++ [{<<"to">>, ToEmail}, {<<"toname">>, ToName}];
         ToEmail ->
-            Params0 ++ [ {<<"to">>, ToEmail} ]
+            Params0 ++ [{<<"to">>, ToEmail}]
     end,
     Params2 = case parse_email(From) of
         {FromName, FromEmail} ->
-            Params1 ++ [ {<<"from">>, FromEmail}, {<<"fromname">>, FromName} ];
+            Params1 ++ [{<<"from">>, FromEmail}, {<<"fromname">>, FromName}];
         FromEmail ->
-            Params1 ++ [ {<<"from">>, FromEmail} ]
+            Params1 ++ [{<<"from">>, FromEmail}]
     end,
-    handle_response(send_email(Params2));
+    Params3 = case ej:get({"ReplyTo"}, Jterm) of
+        undefined ->
+            Params2;
+        ReplyTo ->
+            case parse_email(ReplyTo) of
+                {_, ReplyToEmail} -> ReplyToEmail;
+                ReplyToEmail -> ReplyToEmail
+            end,
+            Params2 ++ [{<<"replyto">>, ReplyToEmail}]
+    end,
+    handle_response(send_email(Params3));
 
 send_email(Params) when is_list(Params) ->
     {ok, ApiUser} = application:get_env(esendgrid, sendgrid_api_user),
