@@ -31,7 +31,7 @@ send_email(Json) when is_binary(Json) ->
         undefined ->
             Params1;
         Html when is_binary(Html) ->
-            Params1 ++ [{<<"html">>, Text}]
+            Params1 ++ [{<<"html">>, Html}]
     end,
     %% TODO throw proper errror, must have either text or html
     true = Html =/= undefined orelse Text =/= undefined,
