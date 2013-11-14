@@ -34,7 +34,7 @@ send_email(Json) when is_binary(Json) ->
             Params1 ++ [{<<"html">>, Text}]
     end,
     %% TODO throw proper errror, must have either text or html
-    true = Html =/= undefined andalso Text =/= undefined,
+    true = Html =/= undefined orelse Text =/= undefined,
     Params3 = case parse_email(To) of
         {ToName, ToEmail} ->
             Params2 ++ [{<<"to">>, ToEmail}, {<<"toname">>, ToName}];
