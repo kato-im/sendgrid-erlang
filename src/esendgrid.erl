@@ -15,35 +15,49 @@ send_email(Json) when is_binary(Json) ->
     Jterm = jiffy:decode(Json),
     Subject = ej:get({"Subject"}, Jterm),
     Text = ej:get({"TextBody"}, Jterm),
+    Html = ej:get({"HtmlBody"}, Jterm),
     To = ej:get({"To"}, Jterm),
     From = ej:get({"From"}, Jterm),
     Params0 = [
-        {<<"subject">>, Subject},
-        {<<"text">>, Text}
+        {<<"subject">>, Subject}
     ],
-    Params1 = case parse_email(To) of
-        {ToName, ToEmail} ->
-            Params0 ++ [{<<"to">>, ToEmail}, {<<"toname">>, ToName}];
-        ToEmail ->
-            Params0 ++ [{<<"to">>, ToEmail}]
-    end,
-    Params2 = case parse_email(From) of
-        {FromName, FromEmail} ->
-            Params1 ++ [{<<"from">>, FromEmail}, {<<"fromname">>, FromName}];
-        FromEmail ->
-            Params1 ++ [{<<"from">>, FromEmail}]
-    end,
-    Params3 = case ej:get({"ReplyTo"}, Jterm) of
+    Params1 = case Text of
         undefined ->
-            Params2;
+            Params0;
+        Text when is_binary(Text) ->
+            Params0 ++ [{<<"text">>, Text}]
+    end,
+    Params2 = case Html of
+        undefined ->
+            Params1;
+        Html when is_binary(Html) ->
+            Params1 ++ [{<<"html">>, Text}]
+    end,
+    %% TODO throw proper errror, must have either text or html
+    true = Html =/= undefined andalso Text =/= undefined,
+    Params3 = case parse_email(To) of
+        {ToName, ToEmail} ->
+            Params2 ++ [{<<"to">>, ToEmail}, {<<"toname">>, ToName}];
+        ToEmail ->
+            Params2 ++ [{<<"to">>, ToEmail}]
+    end,
+    Params4 = case parse_email(From) of
+        {FromName, FromEmail} ->
+            Params3 ++ [{<<"from">>, FromEmail}, {<<"fromname">>, FromName}];
+        FromEmail ->
+            Params3 ++ [{<<"from">>, FromEmail}]
+    end,
+    Params5 = case ej:get({"ReplyTo"}, Jterm) of
+        undefined ->
+            Params4;
         ReplyTo ->
             case parse_email(ReplyTo) of
                 {_, ReplyToEmail} -> ReplyToEmail;
                 ReplyToEmail -> ReplyToEmail
             end,
-            Params2 ++ [{<<"replyto">>, ReplyToEmail}]
+            Params4 ++ [{<<"replyto">>, ReplyToEmail}]
     end,
-    handle_response(send_email(Params3));
+    handle_response(send_email(Params5));
 
 send_email(Params) when is_list(Params) ->
     {ok, ApiUser} = application:get_env(esendgrid, sendgrid_api_user),
